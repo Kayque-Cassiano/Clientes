@@ -18,7 +18,7 @@ public class ClienteServlet extends HttpServlet {
 
     private int id = 1;
 
-    private final ClienteDAO clienteDAO = new ClienteDAO();
+    private final CLienteDAO clienteDAO = new ClienteDAO();
 
     // Lista dinâmica em memória
     private final List<Cliente> clientes = new ArrayList<>();

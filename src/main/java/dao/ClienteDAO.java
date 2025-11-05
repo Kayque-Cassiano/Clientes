@@ -1,6 +1,6 @@
 package dao;
 
-import dataBase.DataBaseConnector;
+
 import model.Cliente;
 
 import javax.crypto.Cipher;
@@ -71,5 +71,18 @@ public class ClienteDAO {
         }
     }
 
+    public boolean deletar(int id) {
+        String sql = "DELETE FROM clientes WHERE id = ?";
 
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
+        try {
+            conn = DataBaseConnector.getConnection();
+            stmt = conn.prepareStatement(sql);
+            stmt = setInt(1, id);
+        } catch (SQLException e) {
+            System.out.println("Ocorreu um erro ao excluir o usuário");
+        }
+    }
 }
