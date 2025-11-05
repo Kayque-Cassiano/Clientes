@@ -16,12 +16,7 @@ import java.util.List;
 @WebServlet("/clientes")
 public class ClienteServlet extends HttpServlet {
 
-    private int id = 1;
-
-    private final CLienteDAO clienteDAO = new ClienteDAO();
-
-    // Lista dinâmica em memória
-    private final List<Cliente> clientes = new ArrayList<>();
+    private final ClienteDAO clienteDAO = new ClienteDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -72,48 +67,42 @@ public class ClienteServlet extends HttpServlet {
         }
     }
 
-    private void listarClientes(HttpServletRequest req, HttpServletResponse resp)
+    private void listarClientes(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         try {
-            // Busca no banco
-            List<Cliente> clienteDB = clienteDAO.listarTodos();
-
-            // Junta com os da lista (em memória)
-            List<Cliente> todosClientes = new ArrayList<>(clienteDB);
-            todosClientes.addAll(clientes);
-
-            req.setAttribute("clientes", todosClientes);
-            req.getRequestDispatcher("/listaClientes.jsp").forward(req, resp);
+            List<Cliente> clientes = clienteDAO.listarTodos();
+            request.setAttribute("clientes", clientes);
+            request.getRequestDispatcher("/lista-clientes.jsp").forward(request, response);
         } catch (SQLException e) {
             throw new ServletException("Erro ao listar clientes", e);
         }
     }
 
-    private void inserirCliente(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException, ServletException {
+    private void mostrarFormularioNovo(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.getRequestDispatcher("/formulario-cliente.jsp").forward(request, response);
+    }
 
-        String nome = req.getParameter("nome");
-        String email = req.getParameter("email");
-        String telefone = req.getParameter("telefone");
-        String cpf = req.getParameter("cpf");
-        String endereco = req.getParameter("endereco");
+    private void inserirCliente(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String nome = request.getParameter("nome");
+        String email = request.getParameter("email");
+        String telefone = request.getParameter("telefone");
+        String cpf = request.getParameter("cpf");
+        String endereco = request.getParameter("endereco");
 
-        Cliente cliente = new Cliente(id, nome, email, telefone, cpf, endereco);
+        Cliente cliente = new Cliente();
+        cliente.setNome(nome);
+        cliente.setEmail(email);
+        cliente.setTelefone(telefone);
+        cliente.setCpf(cpf);
+        cliente.setEndereco(endereco);
 
         try {
-            // ✅ salva no banco
             clienteDAO.inserir(cliente);
-
-            // também adiciona na lista (mantendo comportamento original)
-            id++;
-            clientes.add(cliente);
-
-            // redireciona para listagem
-            resp.sendRedirect("/clientes?acao=listar");
-
+            response.sendRedirect(request.getContextPath() + "/clientes?acao=listar");
         } catch (SQLException e) {
-            throw new ServletException("Erro ao inserir cliente no banco", e);
+            throw new ServletException("Erro ao inserir cliente", e);
         }
     }
 
@@ -123,8 +112,7 @@ public class ClienteServlet extends HttpServlet {
 
         int id = Integer.parseInt(idCliente);
 
-        // Remove cliente da lista em memória (mantido)
-        clientes.removeIf(cliente -> cliente.getId() == id);
+        clienteDAO.deletar(id);
 
         resp.sendRedirect("/clientes?acao=listar");
     }
@@ -135,11 +123,7 @@ public class ClienteServlet extends HttpServlet {
         String idCliente = req.getParameter("id");
         int id = Integer.parseInt(idCliente);
 
-        // Busca cliente na lista (mantido)
-        Cliente cliente = clientes.stream()
-                .filter(c -> c.getId() == id)
-                .findFirst()
-                .orElse(null);
+        Cliente cliente = clienteDAO.buscarPorId(id);
 
         if (cliente == null) {
             resp.sendRedirect("/clientes?acao=listar");
@@ -162,13 +146,9 @@ public class ClienteServlet extends HttpServlet {
 
         int id = Integer.parseInt(idCliente);
 
-        for (int i = 0; i < clientes.size(); i++) {
-            if (clientes.get(i).getId() == id) {
-                Cliente atualizado = new Cliente(id, nome, email, telefone, cpf, endereco);
-                clientes.set(i, atualizado);
-                break;
-            }
-        }
+        Cliente cliente = new Cliente(nome, email, telefone, cpf, endereco);
+
+        clienteDAO.atualizar(cliente);
 
         resp.sendRedirect("/clientes?acao=listar");
     }
